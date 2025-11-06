@@ -1,4 +1,4 @@
-import {GedcomEntry, parse as parseGedcom} from 'parse-gedcom';
+import { GedcomEntry, parse as parseGedcom } from 'parse-gedcom';
 import {
   DateOrRange,
   gedcomEntriesToJson,
@@ -8,18 +8,18 @@ import {
   JsonImage,
   JsonIndi,
 } from 'topola';
-import {compareDates} from './date_util';
-import {TopolaError} from './error';
+import { compareDates } from './date_util';
+import { TopolaError } from './error';
 
 export interface GedcomData {
   /** The HEAD entry. */
   head: GedcomEntry;
   /** INDI entries mapped by id. */
-  indis: {[key: string]: GedcomEntry};
+  indis: { [key: string]: GedcomEntry };
   /** FAM entries mapped by id. */
-  fams: {[key: string]: GedcomEntry};
+  fams: { [key: string]: GedcomEntry };
   /** Other entries mapped by id, e.g. NOTE, SOUR. */
-  other: {[key: string]: GedcomEntry};
+  other: { [key: string]: GedcomEntry };
 }
 
 export interface TopolaData {
@@ -61,9 +61,9 @@ export function idToFamMap(data: JsonGedcomData): Map<string, JsonFam> {
 
 function prepareGedcom(entries: GedcomEntry[]): GedcomData {
   const head = entries.find((entry) => entry.tag === 'HEAD')!;
-  const indis: {[key: string]: GedcomEntry} = {};
-  const fams: {[key: string]: GedcomEntry} = {};
-  const other: {[key: string]: GedcomEntry} = {};
+  const indis: { [key: string]: GedcomEntry } = {};
+  const fams: { [key: string]: GedcomEntry } = {};
+  const other: { [key: string]: GedcomEntry } = {};
   entries.forEach((entry) => {
     if (entry.tag === 'INDI') {
       indis[pointerToId(entry.pointer)] = entry;
@@ -73,7 +73,7 @@ function prepareGedcom(entries: GedcomEntry[]): GedcomData {
       other[pointerToId(entry.pointer)] = entry;
     }
   });
-  return {head, indis, fams, other};
+  return { head, indis, fams, other };
 }
 
 function strcmp(a: string, b: string) {
@@ -126,7 +126,7 @@ function sortFamilyChildren(
     return fam;
   }
   const newChildren = fam.children.sort(comparator);
-  return Object.assign({}, fam, {children: newChildren});
+  return Object.assign({}, fam, { children: newChildren });
 }
 
 /**
@@ -136,7 +136,7 @@ function sortFamilyChildren(
 function sortChildren(gedcom: JsonGedcomData): JsonGedcomData {
   const comparator = birthDatesComparator(gedcom);
   const newFams = gedcom.fams.map((fam) => sortFamilyChildren(fam, comparator));
-  return Object.assign({}, gedcom, {fams: newFams});
+  return Object.assign({}, gedcom, { fams: newFams });
 }
 
 /**
@@ -151,7 +151,7 @@ function sortIndiSpouses(
     return indi;
   }
   const newFams = indi.fams.sort(comparator);
-  return Object.assign({}, indi, {fams: newFams});
+  return Object.assign({}, indi, { fams: newFams });
 }
 
 function sortSpouses(gedcom: JsonGedcomData): JsonGedcomData {
@@ -159,7 +159,7 @@ function sortSpouses(gedcom: JsonGedcomData): JsonGedcomData {
   const newIndis = gedcom.indis.map((indi) =>
     sortIndiSpouses(indi, comparator),
   );
-  return Object.assign({}, gedcom, {indis: newIndis});
+  return Object.assign({}, gedcom, { indis: newIndis });
 }
 
 /**
@@ -169,7 +169,7 @@ function sortSpouses(gedcom: JsonGedcomData): JsonGedcomData {
 export function dereference(
   entry: GedcomEntry,
   gedcom: GedcomData,
-  getterFunction: (gedcom: GedcomData) => {[key: string]: GedcomEntry},
+  getterFunction: (gedcom: GedcomData) => { [key: string]: GedcomEntry },
 ) {
   if (entry.data) {
     const dereferenced = getterFunction(gedcom)[pointerToId(entry.data)];
@@ -224,14 +224,14 @@ function filterImage(indi: JsonIndi, images: Map<string, string>): JsonIndi {
     const fileName = filePath.match(/[^/]*$/)![0];
     // If the image file has been loaded into memory, use it.
     if (images.has(filePath)) {
-      newImages.push({url: images.get(filePath)!, title: image.title});
+      newImages.push({ url: images.get(filePath)!, title: image.title });
     } else if (images.has(fileName)) {
-      newImages.push({url: images.get(fileName)!, title: image.title});
+      newImages.push({ url: images.get(fileName)!, title: image.title });
     } else if (image.url.startsWith('http') && isImageFile(image.url)) {
       newImages.push(image);
     }
   });
-  return Object.assign({}, indi, {images: newImages});
+  return Object.assign({}, indi, { images: newImages });
 }
 
 /**
@@ -243,7 +243,7 @@ function filterImages(
   images: Map<string, string>,
 ): JsonGedcomData {
   const newIndis = gedcom.indis.map((indi) => filterImage(indi, images));
-  return Object.assign({}, gedcom, {indis: newIndis});
+  return Object.assign({}, gedcom, { indis: newIndis });
 }
 
 /**
@@ -336,6 +336,41 @@ export function resolveType(entry: GedcomEntry) {
   return entry.tree.find((subEntry) => subEntry.tag === 'TYPE')?.data;
 }
 
+function findObjetFile(
+  sourceEntry: GedcomEntry,
+  gedcom: GedcomData,
+): GedcomEntry | undefined {
+  const objectEntry = sourceEntry.tree.find(
+    (subEntry) => 'OBJE' === subEntry.tag,
+  );
+  if (objectEntry) {
+    Object.assign(objectEntry, dereference(
+      objectEntry,
+      gedcom,
+      (gedcom) => gedcom.other,
+    ))
+    return objectEntry.tree.find((subentry) => 'FILE' === subentry.tag)
+  }
+}
+
+function findFileMedia(
+  sourceEntry: GedcomEntry,
+  gedcom: GedcomData,
+) {
+  const entryFile = sourceEntry.tree.find(
+    (subentry) => 'FILE' === subentry.tag
+  ) || findObjetFile(sourceEntry, gedcom);
+  if (entryFile) {
+    const EntryFileTitle = entryFile.tree.find((subEntry) => 'TITL' === subEntry.tag);
+    console.log(EntryFileTitle)
+    return {
+      page: entryFile.data,
+      title: EntryFileTitle?.data
+    }
+  }
+  return;
+}
+
 export function mapToSource(
   sourceEntryReference: GedcomEntry,
   gedcom: GedcomData,
@@ -360,6 +395,8 @@ export function mapToSource(
     (subEntry) => 'PAGE' === subEntry.tag,
   );
 
+  const media = findFileMedia(sourceEntry, gedcom);
+
   const sourceData = sourceEntryReference.tree.find(
     (subEntry) => 'DATA' === subEntry.tag,
   );
@@ -367,9 +404,9 @@ export function mapToSource(
   const date = sourceData ? resolveDate(sourceData) : undefined;
 
   return {
-    title: title?.data || abbr?.data,
+    title: title?.data || abbr?.data || media?.title,
     author: author?.data,
-    page: page?.data,
+    page: page?.data || media?.page,
     date: date ? getDate(date.data) : undefined,
     publicationInfo: publicationInfo?.data,
   };
