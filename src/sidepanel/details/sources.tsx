@@ -1,14 +1,14 @@
-import {useIntl} from 'react-intl';
+import { useIntl } from 'react-intl';
 import Linkify from 'react-linkify';
-import {List} from 'semantic-ui-react';
-import {formatDateOrRange} from '../../util/date_util';
-import {Source} from '../../util/gedcom_util';
+import { List } from 'semantic-ui-react';
+import { formatDateOrRange } from '../../util/date_util';
+import { Source } from '../../util/gedcom_util';
 
 interface Props {
   sources?: Source[];
 }
 
-export function Sources({sources}: Props) {
+export function Sources({ sources }: Props) {
   const intl = useIntl();
 
   if (!sources?.length) return null;
@@ -20,14 +20,20 @@ export function Sources({sources}: Props) {
           <List.Icon verticalAlign="middle" name="circle" size="tiny" />
           <List.Content>
             <List.Header>
-              <Linkify properties={{target: '_blank'}}>
+              <Linkify properties={{ target: '_blank' }}>
                 {[source.author, source.title, source.publicationInfo]
                   .filter((sourceElement) => !!sourceElement)
                   .join(', ')}
               </Linkify>
             </List.Header>
             <List.Description>
-              <Linkify properties={{target: '_blank'}}>{source.page}</Linkify>
+              {
+                (source.media && !(/^http/.test(source.media))) ? (
+                  <a href={encodeURI(source.media)} target="_blank">{source.media.split('/').pop()}</a>
+                ) : (
+                  <Linkify properties={{ target: '_blank' }}>{source.page || source.media}</Linkify>
+                )
+              }
               {source.date && ` [${formatDateOrRange(source.date, intl)}]`}
             </List.Description>
           </List.Content>

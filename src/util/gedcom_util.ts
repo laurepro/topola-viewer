@@ -33,6 +33,8 @@ export interface Source {
   page?: string;
   date?: DateOrRange;
   publicationInfo?: string;
+  media?: string;
+  format?: string;
 }
 
 /**
@@ -362,10 +364,11 @@ function findFileMedia(
   ) || findObjetFile(sourceEntry, gedcom);
   if (entryFile) {
     const EntryFileTitle = entryFile.tree.find((subEntry) => 'TITL' === subEntry.tag);
-    console.log(EntryFileTitle)
+    const EntryFileFormat = entryFile.tree.find((subEntry) => 'FORM' === subEntry.tag);
     return {
-      page: entryFile.data,
-      title: EntryFileTitle?.data
+      file: entryFile.data,
+      title: EntryFileTitle?.data,
+      format: EntryFileFormat?.data,
     }
   }
   return;
@@ -406,8 +409,10 @@ export function mapToSource(
   return {
     title: title?.data || abbr?.data || media?.title,
     author: author?.data,
-    page: page?.data || media?.page,
+    page: page?.data,
     date: date ? getDate(date.data) : undefined,
     publicationInfo: publicationInfo?.data,
+    media: media?.file,
+    format: media?.format,
   };
 }
