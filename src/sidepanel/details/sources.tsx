@@ -28,7 +28,7 @@ export function Sources({ sources }: Props) {
             </List.Header>
             <List.Description>
               {
-                (source.media && !(/^http/.test(source.media))) ? (
+                (source.media && !(/^http/.test(source.media) && import.meta.env.VITE_STATIC_URL)) ? (
                   <a href={encodeURI(source.media)} target="_blank">{source.media.split('/').pop()}</a>
                 ) : (
                   <Linkify properties={{ target: '_blank' }}>{source.page || source.media}</Linkify>

@@ -229,7 +229,7 @@ function filterImage(indi: JsonIndi, images: Map<string, string>): JsonIndi {
       newImages.push({ url: images.get(filePath)!, title: image.title });
     } else if (images.has(fileName)) {
       newImages.push({ url: images.get(fileName)!, title: image.title });
-    } else if (image.url.startsWith('http') && isImageFile(image.url)) {
+    } else if ((image.url.startsWith('http') || import.meta.env.VITE_STATIC_URL) && isImageFile(image.url)) {
       newImages.push(image);
     }
   });
@@ -314,7 +314,7 @@ function findFileEntry(
 ): GedcomEntry | undefined {
   return objectEntry.tree.find(
     (entry) =>
-      entry.tag === 'FILE' && entry.data.startsWith('http') && predicate(entry),
+      entry.tag === 'FILE' && (entry.data.startsWith('http') || import.meta.env.VITE_STATIC_URL) && predicate(entry),
   );
 }
 
