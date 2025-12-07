@@ -234,7 +234,7 @@ function eventSources(entry: GedcomEntry, gedcom: GedcomData): Source[] {
 
 function eventNotes(entry: GedcomEntry, gedcom: GedcomData): string[][] {
   const externalNotes = entry.tree
-    .filter((subEntry) => subEntry.tag === 'NOTE')
+    .filter((subEntry) => subEntry.tag === 'NOTE' || subEntry.tag === 'SNOTE')
     .map((note) => dereference(note, gedcom, (gedcom) => gedcom.other));
 
   //for generic 'EVEN' tag 'TYPE is mandatory and is part of the header, for other types it can be worth it to display it as a note
